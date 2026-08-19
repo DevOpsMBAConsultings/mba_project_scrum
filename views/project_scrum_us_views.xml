@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <!-- Vista Formulario Heredada -->
+    <record id="view_project_scrum_us_form_inherit_mba" model="ir.ui.view">
+        <field name="name">project.scrum.us.form.inherit.mba</field>
+        <field name="model">project.scrum.us</field>
+        <field name="inherit_id" ref="project_scrum.view_ps_us_form" />
+        <field name="arch" type="xml">
+            <!-- Header con Statusbar y Botones de Flujo -->
+            <xpath expr="//sheet" position="before">
+                <header>
+                    <button
+                        name="action_set_refinement"
+                        string="Pasar a Refinamiento"
+                        type="object"
+                        invisible="state != 'draft'"
+                        class="btn-primary"
+                    />
+                    <button
+                        name="action_set_ready"
+                        string="Listo para Sprint"
+                        type="object"
+                        invisible="state != 'refinement'"
+                        class="btn-primary"
+                    />
+                    <button
+                        name="action_set_in_progress"
+                        string="Iniciar Desarrollo"
+                        type="object"
+                        invisible="state not in ('ready', 'draft')"
+                        class="btn-primary"
+                    />
+                    <button
+                        name="action_set_testing"
+                        string="Enviar a Pruebas (QA)"
+                        type="object"
+                        invisible="state != 'in_progress'"
+                        class="btn-secondary"
+                    />
+                    <button
+                        name="action_set_done"
+                        string="Aprobar (Done)"
+                        type="object"
+                        invisible="state not in ('in_progress', 'testing')"
+                        class="btn-success"
+                    />
+                    <button
+                        name="action_set_cancelled"
+                        string="Cancelar"
+                        type="object"
+                        invisible="state in ('done', 'cancelled')"
+                    />
+                    <button
+                        name="action_set_draft"
+                        string="Volver a Borrador"
+                        type="object"
+                        invisible="state != 'cancelled'"
+                    />
+                    <field
+                        name="state"
+                        widget="statusbar"
+                        statusbar_visible="draft,refinement,ready,in_progress,testing,done"
+                    />
+                </header>
+            </xpath>
+
+            <!-- Reemplazo de los grupos superiores de información -->
+            <xpath expr="//group[last()]" position="replace">
+                <group>
+                    <group string="📍 Datos del Proyecto y Estimación">
+                        <field name="project_id" />
+                        <field
+                            name="sprint_ids"
+                            widget="many2many_tags"
+                            context="{'default_project_id': project_id}"
+                            domain="[('project_id', '=', project_id)]"
+                        />
+                        <field name="actor_ids" widget="many2many_tags" />
+                        <field name="request_type" />
+                        <field name="story_points" />
+                        <field name="sequence" />
+                    </group>
+                    <group string="🧩 Clasificación Odoo &amp; Prioridad">
+                        <field name="odoo_module_category" />
+                        <field name="solution_type" />
+                        <field name="golive_criticality" />
+                        <field name="environment" />
+                        <field name="moscow" />
+                        <field name="value" />
+                        <field name="risk" />
+                        <field name="kano" />
+                    </group>
+                </group>
+            </xpath>
+
+            <!-- Reorganización de Pestañas Notebook -->
+            <xpath expr="//notebook" position="replace">
+                <notebook>
+                    <page string="👤 Narrativa US" name="narrative">
+                        <group string="Estructura Ágil (Historia de Usuario)">
+                            <field
+                                name="role"
+                                placeholder="Ej. Contador de la empresa, Cajero POS, Administrador de Almacén..."
+                            />
+                            <field
+                                name="want"
+                                placeholder="Ej. Quiero emitir una nota de crédito directamente desde el POS..."
+                            />
+                            <field
+                                name="benefit"
+                                placeholder="Ej. Para evitar que queden facturas en estado por facturar y cuadrar la caja..."
+                            />
+                        </group>
+                        <separator string="Contexto y Descripción General" />
+                        <field
+                            name="description"
+                            placeholder="Detalles adicionales o contexto del requerimiento..."
+                        />
+                    </page>
+
+                    <page string="📋 Criterios de Aceptación (DoD)" name="acceptance">
+                        <group>
+                            <field
+                                name="acceptance_criteria"
+                                placeholder="Escenario 1: Dado que... Cuando... Entonces..."
+                            />
+                            <field
+                                name="definition_of_done"
+                                placeholder="Checklist de entrega (ej. Probado en Staging, sin errores en log...)"
+                            />
+                        </group>
+                    </page>
+
+                    <page string="⚙️ Especificación Técnica Odoo" name="technical_specs">
+                        <group string="Definición para el Desarrollador">
+                            <field
+                                name="technical_module_repo"
+                                placeholder="Ej. mba_pa_edi_hka, mba_pos_invoice_status"
+                            />
+                            <field
+                                name="inherited_models"
+                                placeholder="Ej. account.move, pos.order, res.partner"
+                            />
+                        </group>
+                        <separator string="Vistas XPath, Campos y Lógica Técnica" />
+                        <field
+                            name="technical_specs"
+                            placeholder="Detalle de campos nuevos, hooks, herencia de vistas XPath y métodos a sobrescribir..."
+                        />
+                    </page>
+
+                    <page string="🔨 Tareas" name="tasks">
+                        <field
+                            name="task_ids"
+                            string="Task"
+                            context="{
+                                'default_project_id': project_id,
+                                'default_us_id': id,
+                                'default_moscow': moscow,
+                                'default_value': value,
+                                'default_risk': risk,
+                                'default_kano': kano,
+                            }"
+                        >
+                            <list string="Tasks" editable="bottom">
+                                <field name="name" />
+                                <field name="user_ids" widget="many2many_avatar_user" />
+                                <field name="stage_id" />
+                            </list>
+                        </field>
+                    </page>
+
+                    <page string="🧪 Casos de Prueba (QA)" name="test_cases">
+                        <field
+                            name="test_ids"
+                            string="Test Case"
+                            context="{
+                                'default_project_id': project_id,
+                                'default_user_story_id_test': id,
+                            }"
+                        />
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista Lista (Tree) Heredada -->
+    <record id="view_project_scrum_us_tree_inherit_mba" model="ir.ui.view">
+        <field name="name">project.scrum.us.tree.inherit.mba</field>
+        <field name="model">project.scrum.us</field>
+        <field name="inherit_id" ref="project_scrum.view_ps_us_tree" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="role" optional="show" />
+                <field name="odoo_module_category" optional="show" />
+                <field name="request_type" optional="show" />
+                <field name="golive_criticality" widget="badge" optional="show" />
+                <field name="story_points" optional="show" />
+                <field name="state" widget="badge" optional="show" />
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista Búsqueda (Search) Heredada -->
+    <record id="view_project_scrum_us_search_inherit_mba" model="ir.ui.view">
+        <field name="name">project.scrum.us.search.inherit.mba</field>
+        <field name="model">project.scrum.us</field>
+        <field name="inherit_id" ref="project_scrum.view_ps_us_search" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="role" />
+                <field name="odoo_module_category" />
+                <field name="request_type" />
+                <field name="state" />
+                <field name="golive_criticality" />
+                <field name="technical_module_repo" />
+            </xpath>
+            <xpath expr="//group[@string='Group By...']" position="inside">
+                <filter
+                    string="Estado"
+                    name="group_by_state"
+                    domain="[]"
+                    context="{'group_by': 'state'}"
+                />
+                <filter
+                    string="Módulo Odoo"
+                    name="group_by_odoo_module"
+                    domain="[]"
+                    context="{'group_by': 'odoo_module_category'}"
+                />
+                <filter
+                    string="Criticidad Go-Live"
+                    name="group_by_golive"
+                    domain="[]"
+                    context="{'group_by': 'golive_criticality'}"
+                />
+                <filter
+                    string="Tipo de Requerimiento"
+                    name="group_by_request_type"
+                    domain="[]"
+                    context="{'group_by': 'request_type'}"
+                />
+                <filter
+                    string="Story Points"
+                    name="group_by_sp"
+                    domain="[]"
+                    context="{'group_by': 'story_points'}"
+                />
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
