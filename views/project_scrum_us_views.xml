@@ -65,8 +65,31 @@
                 </header>
             </xpath>
 
-            <!-- Reemplazo de los grupos superiores de información -->
-            <xpath expr="//group[last()]" position="replace">
+            <!-- 1. Título a ancho completo (100% Width) y sin corte -->
+            <xpath expr="//sheet/group[1]" position="replace" />
+            <xpath expr="//sheet/h1" position="replace">
+                <div class="oe_title">
+                    <span class="o_form_label">Historia de Usuario</span>
+                    <h1 class="d-flex flex-wrap align-items-center">
+                        <field
+                            name="reference"
+                            class="text-muted me-2"
+                            readonly="1"
+                            invisible="not reference or reference == '/'"
+                        />
+                        <field
+                            name="name"
+                            placeholder="Título descriptivo de la Historia de Usuario..."
+                            class="w-100"
+                        />
+                    </h1>
+                </div>
+            </xpath>
+
+            <!-- 2. Limpieza de grupos antiguos y reemplazo con las 2 columnas organizadas -->
+            <xpath expr="//group[@col='4']" position="replace" />
+            <xpath expr="//group[@col='4']" position="replace" />
+            <xpath expr="//group[@col='4']" position="replace">
                 <group>
                     <group string="📍 Datos del Proyecto y Estimación">
                         <field name="project_id" />
