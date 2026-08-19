@@ -217,7 +217,7 @@
                 <field name="golive_criticality" />
                 <field name="technical_module_repo" />
             </xpath>
-            <xpath expr="//group[@string='Group By...']" position="inside">
+            <xpath expr="//filter[@name='group_by_project']" position="after">
                 <filter
                     string="Estado"
                     name="group_by_state"
