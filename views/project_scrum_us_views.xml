@@ -275,4 +275,194 @@
         </field>
     </record>
 
+    <!-- Acción dedicada para el Smart Button de User Stories desde el Proyecto -->
+    <record id="action_project_user_stories_from_project" model="ir.actions.act_window">
+        <field name="name">Historias de Usuario</field>
+        <field name="res_model">project.scrum.us</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="view_id" ref="project_scrum.view_ps_us_tree" />
+        <field name="search_view_id" ref="project_scrum.view_ps_us_search" />
+        <field name="domain">[('project_id', '=', active_id)]</field>
+        <field name="context">{
+            'default_project_id': active_id,
+            'search_default_project_id': [active_id],
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Crea tu primera Historia de Usuario para este proyecto</p>
+        </field>
+    </record>
+
+    <!-- Vista Kanban para Sprints -->
+    <record id="view_project_scrum_sprint_kanban_mba" model="ir.ui.view">
+        <field name="name">project.scrum.sprint.kanban.mba</field>
+        <field name="model">project.scrum.sprint</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column" quick_create="false">
+                <field name="name" />
+                <field name="state" />
+                <field name="date_start" />
+                <field name="date_stop" />
+                <field name="task_count" />
+                <field name="user_id" />
+                <progressbar field="state" colors='{"draft": "muted", "open": "primary", "pending": "warning", "done": "success"}'/>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong class="fs-6 text-primary"><field name="name"/></strong>
+                        </div>
+                        <div class="text-muted small mb-2">
+                            <i class="fa fa-calendar me-1"/>
+                            <field name="date_start"/> <t t-if="record.date_stop.raw_value"> ➔ <field name="date_stop"/></t>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2">
+                            <span class="badge rounded-pill text-bg-light border">
+                                <i class="fa fa-tasks me-1"/> <t t-out="record.task_count.raw_value or 0"/> Tareas
+                            </span>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Extender la acción de Sprints para incluir la vista kanban con contexto limpio -->
+    <record id="project_scrum.action_ps_sprint_current" model="ir.actions.act_window">
+        <field name="view_mode">kanban,list,form,calendar,timeline,graph</field>
+        <field name="view_id" ref="view_project_scrum_sprint_kanban_mba" />
+        <field name="context">{
+            'default_project_id': active_id,
+            'search_default_project_id': [active_id],
+            'group_by': 'state',
+        }</field>
+    </record>
+
+    <!-- Herencia en la vista Lista de Proyectos: alternar Ver tareas / Ver sprints -->
+    <record id="view_project_tree_inherit_scrum" model="ir.ui.view">
+        <field name="name">project.project.tree.inherit.scrum</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project" />
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_view_tasks']" position="attributes">
+                <attribute name="invisible">use_scrum</attribute>
+            </xpath>
+            <xpath expr="//button[@name='action_view_tasks']" position="after">
+                <button string="Ver sprints" name="action_view_sprints" type="object" invisible="not use_scrum" />
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Herencia en la vista principal de Proyectos: Smart Buttons de Scrum -->
+    <record id="view_project_project_form_inherit_scrum_buttons" model="ir.ui.view">
+        <field name="name">project.project.form.inherit.scrum.buttons</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project" />
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <!-- Ocultar botón Tareas nativo si el proyecto usa Scrum -->
+            <xpath expr="//button[@name='action_view_tasks']" position="attributes">
+                <attribute name="invisible">use_scrum</attribute>
+            </xpath>
+            <!-- Agregar Smart Buttons de Sprints y User Stories -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button
+                    class="oe_stat_button"
+                    type="action"
+                    icon="fa-tasks"
+                    name="%(project_scrum.action_ps_sprint_current)d"
+                    invisible="not use_scrum"
+                >
+                    <field name="sprint_count" widget="statinfo" string="Sprints" />
+                </button>
+                <button
+                    class="oe_stat_button"
+                    type="action"
+                    icon="fa-files-o"
+                    name="%(action_project_user_stories_from_project)d"
+                    invisible="not use_scrum"
+                >
+                    <field name="user_story_count" widget="statinfo" string="User Stories" />
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Reorganización de Tabs y Barra de Etapas en el Formulario de Sprint -->
+    <record id="view_project_scrum_sprint_form_inherit_mba" model="ir.ui.view">
+        <field name="name">project.scrum.sprint.form.inherit.mba</field>
+        <field name="model">project.scrum.sprint</field>
+        <field name="inherit_id" ref="project_scrum.view_ps_sprint_form" />
+        <field name="arch" type="xml">
+            <!-- Hacer la barra de estado cliqueable directamente como en Tareas/Oportunidades -->
+            <xpath expr="//header/field[@name='state']" position="attributes">
+                <attribute name="options">{'clickable': '1'}</attribute>
+                <attribute name="statusbar_visible">draft,open,pending,done</attribute>
+            </xpath>
+
+            <!-- Título del Sprint a 100% de ancho sin corte -->
+            <xpath expr="//sheet/h1" position="replace">
+                <div class="oe_title">
+                    <span class="o_form_label">Sprint</span>
+                    <h1 class="d-flex flex-wrap align-items-center">
+                        <field name="name" placeholder="Nombre del Sprint..." class="w-100" />
+                    </h1>
+                </div>
+            </xpath>
+
+            <!-- 1. Remover el grupo de task_ids del tab Review -->
+            <xpath expr="//field[@name='task_ids']/parent::group" position="replace"/>
+            
+            <!-- 2. Colocar tab de Descripción, Tareas y Notas antes de User Story -->
+            <xpath expr="//notebook/page[1]" position="before">
+                <page string="Descripción" name="sprint_description">
+                    <field
+                        name="description"
+                        placeholder="Descripción y objetivos del sprint..."
+                    />
+                </page>
+                <page string="Tareas" name="tasks">
+                    <field
+                        name="task_ids"
+                        context="{
+                            'default_project_id': project_id,
+                            'default_sprint_id': id,
+                        }"
+                    />
+                </page>
+                <page string="Notas del Sprint" name="sprint_notes">
+                    <field
+                        name="notes"
+                        placeholder="Escribe aquí las notas, bitácora y acuerdos del sprint..."
+                    />
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista Lista (Tree) de Sprints: Handle de secuencia para ordenar y drag & drop -->
+    <record id="view_project_scrum_sprint_tree_inherit_mba" model="ir.ui.view">
+        <field name="name">project.scrum.sprint.tree.inherit.mba</field>
+        <field name="model">project.scrum.sprint</field>
+        <field name="inherit_id" ref="project_scrum.view_ps_sprint_tree" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="before">
+                <field name="sequence" widget="handle" />
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista Formulario de Tarea: Pestaña Notas de la tarea -->
+    <record id="view_task_form2_inherit_mba_notes" model="ir.ui.view">
+        <field name="name">project.task.form.inherit.mba.notes</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2" />
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='description_page']" position="after">
+                <page string="Notas de la tarea" name="task_notes">
+                    <field name="notes" placeholder="Notas, bitácora y acuerdos de esta tarea..." />
+                </page>
+            </xpath>
+        </field>
+    </record>
+
 </odoo>

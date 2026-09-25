@@ -5,6 +5,13 @@ from odoo import api, fields, models
 class ProjectScrumUs(models.Model):
     _inherit = "project.scrum.us"
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get("reference"):
+                vals["reference"] = self.env["ir.sequence"].next_by_code("user.story")
+        return super().create(vals_list)
+
     # --- Flujo de Estados / Ciclo de Vida ---
     state = fields.Selection(
         [
